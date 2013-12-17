@@ -1,19 +1,20 @@
 import subprocess
 import sqlite3
 import nltk
+import os.path
 from nltk.collocations import *
 from colorama import init, Fore, Back, Style
 init(autoreset=True)
 
 allwords = list()
-lines = list()
-bigrams = list()
 
-pullfb = 'adb pull /data/data/com.facebook.orca com.facebook.orca'
-pullsms = 'adb pull /data/data/com.android.providers.telephony/databases/mmssms.db mmssms.db'
-pullgosms = 'adb pull /data/data/com.jb.gosms/databases/gommssms.db gommssms.db'
-whatsapp_MSG = 'adb pull /data/data/com.whatsapp/databases/msgstore.db msgstore.db'
-whatsapp_WA = 'adb pull /data/data/com.whatsapp/databases/wa.db wa.db'
+pullfb = 'adb pull /data/data/com.facebook.orca/databases/threads_db2 .'
+pullsms = 'adb pull /data/data/com.android.providers.telephony/databases/mmssms.db .'
+pullgosms = 'adb pull /data/data/com.jb.gosms/databases/gommssms.db .'
+whatsapp_MSG = 'adb pull /data/data/com.whatsapp/databases/msgstore.db .'
+whatsapp_WA = 'adb pull /data/data/com.whatsapp/databases/wa.db .'
+sdcard = 'adb pull /mnt/sdcard .'
+sensitive = 'adb pull /data/system/accounts.db .'
 
 def menu():
 	while True:
@@ -21,9 +22,8 @@ def menu():
 				   2 : getAll,
 				   3 : extractWords,
 				   4 : getImages,
-				   5 : cracklock,
-				   6 : exploit,
-				   7 : dumpSD,
+				   5 : dumpSD,
+				   6 : getSensitive,
 		}
 		print (Fore.CYAN + 
 		   'What would you like to do?\n\
@@ -31,19 +31,13 @@ def menu():
 	 2) Pull SMS databases (default, WhatsApp, Facebook, GoSMS)\n\
 	 3) Extract words & Analyze data\n\
 	 4) Pull MMS & Images\n\
-	 5) Crack lockscreen pattern\n\
-	 6) Attempt to gain root\n\
-	 7) Dump sdcard (works w/out root)\n\
-	 8) Exit\n\nChoice:'),
+	 5) Dump sdcard\n\
+	 6) Get sensitive data (accounts.db)\n\
+	 7) Exit\n\nChoice:'),
 		choice = raw_input()
-		if choice=='8': break
-		options[int(choice)]()
-def cracklock():
-	print 'crackit'
-def dumpSD():
-	print 'dumpit'
-def exploit():
-	print 'popit'
+		if choice=='7': break
+		else:
+			options[int(choice)]()
 def checkRoot():
 	print("[*] Trying 'adb root'...")
 	proc = subprocess.Popen(['adb', 'root'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
@@ -55,31 +49,51 @@ def getAll():
 	print (Fore.RED + '[*] Pulling SMS database')
 	subprocess.check_output(pullsms.split())
 	print (Fore.RED + '[*] Checking for Facebook messenger')
-	subprocess.check_output(pullfb.split())
+	#subprocess.check_output(pullfb.split())
 	print (Fore.RED + '[*] Checking for GoSMS')
 	subprocess.check_output(pullgosms.split())
 	print (Fore.RED + '[*] Checking for Whatsapp')
-	subprocess.check_output(whatsapp_MSG.split())
-	subprocess.check_output(whatsapp_WA.split())
-	print (Fore.RED + '[*] Checking for Google Voice')
+	subprocess.Popen(whatsapp_MSG.split()).communicate()[0]
+	subprocess.Popen(whatsapp_WA.split()).communicate()[0]
 
 def extractWords():
-	conn = sqlite3.connect('mmssms.db')
-	c = conn.cursor()
-	c.execute('SELECT c1index_text FROM words_content')
-
-	f = open('words.txt','w')
-	print (Fore.RED + '[*] Loading lists')
-	for record in c.fetchall():
-		line = record[0].encode('utf-8').strip()
-		words = line.split()
-		for eachword in words:
-			allwords.append(eachword.lower())
-		f.write(record[0].encode('utf-8').strip())
-		f.write('\n')
-	#f.close()
-	allwords.sort()
-	analyze()
+	if os.path.exists('mmssms.db') == True:
+		print (Fore.RED + '[*] Extracting words...')
+		
+		conn = sqlite3.connect('mmssms.db')
+		c = conn.cursor()
+		c.execute('SELECT c1index_text FROM words_content')
+		
+		f = open('words.txt','w')
+		for record in c.fetchall():
+			#print record
+			line = record[0].encode('utf-8').strip()
+			words = line.split()
+			for eachword in words:
+				allwords.append(eachword.lower())
+			f.write(record[0].encode('utf-8').strip())
+			f.write('\n')
+		f.close()
+		
+		conn = sqlite3.connect('threads_db2')
+		c = conn.cursor()
+		c.execute('SELECT text FROM messages')
+		
+		f = open('words.txt','a')
+		for record in c.fetchall():
+			line = str(record[0])
+			words = line.split()
+			for eachword in words:
+				allwords.append(eachword.lower())
+			f.write(str(record[0]))
+			f.write('\n')
+		f.close()
+		
+		#sort for analyzing
+		allwords.sort()
+		analyze()
+	else:
+		print (Fore.RED + '\n[*] Use option 2 to dump the databases first!')
 
 def getImages():
 	print (Fore.RED + '[*] Pulling images')
@@ -107,22 +121,43 @@ def analyze():
 		if choice=='1':
 			word_to_search = raw_input("\nEnter a word: ")
 			text.concordance(word_to_search, lines=50)
+		if choice=='2':
+			word_to_count = raw_input("\nEnter a word: ")
+			print fd[word_to_count]
+		if choice=='3':
+			numbers = sorted([item for item in set(text) if item.isdigit() and (len(item) > 1)])
+			#print numbers
+			for eachthing in numbers:
+				text.concordance(eachthing)
+		if choice=='4':
+			text.concordance('av')
+			text.concordance('ave')
+			text.concordance('st')
+			text.concordance('blvd')
+			text.concordance('rd')
 		if choice=='5':
 			most_freq_w = fd.keys()[:20]
 			i = 0
 			for eachword in most_freq_w:
 				print str(i) + ". " + eachword
 				i = i + 1
-		if choice=='3':
-			numbers = sorted([item for item in set(text) if item.isdigit() and (len(item) > 1)])
-			#print numbers
-			for eachthing in numbers:
-				text.concordance(eachthing)
-		if choice=='2':
-			word_to_count = raw_input("\nEnter a word: ")
-			print fd[word_to_count]
 		if choice=='6':
 			break
+
+def dumpSD():
+	print (Fore.RED + '[*] Dumping SD card...')
+	subprocess.check_output(sdcard.split())
+def getSensitive():
+	print (Fore.RED + '[*] Pulling accounts.db...')
+	subprocess.check_output(sensitive.split())
+	connfb = sqlite3.connect('accounts.db')
+	c = connfb.cursor()
+	c.execute('SELECT name FROM accounts')
+	for record in c.fetchall():
+		print str(record[0])
+	c.execute('SELECT password FROM accounts')
+	for record in c.fetchall():
+		print str(record[0])
 
 print (Fore.CYAN + '\nWelcome!'),
 menu()
