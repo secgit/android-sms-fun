@@ -6,15 +6,16 @@ android-sms-fun
 Supported apps:  
 -Facebook Messenger  
 -GoSMS  
--WhatsApp  
--Android default mmssms.db  
+-Android's default 'mmssms.db'  
+-WhatsApp (only dumps .db)
+
 
 Requirements
 ------------
 Python 2.7  
 NLTK  
 sqlite3  
-USB debugging  
+USB debugging & root  
 
 
 Usage
@@ -29,10 +30,9 @@ Welcome! What would you like to do?
          2) Pull SMS databases (default, WhatsApp, Facebook, GoSMS)  
          3) Extract words & Analyze data  
          4) Pull MMS & Images  
-         5) Crack lockscreen pattern  
-         6) Attempt to gain root  
-         7) Dump sdcard (works w/out root)  
-         8) Exit  
+         5) Dump sdcard  
+         6) Get sensitive data (accounts.db)    
+         7) Exit  
 Choice:  
   
 Option 3 expands to...  
