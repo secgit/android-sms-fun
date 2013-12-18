@@ -9,8 +9,6 @@ import sqlite3
 import nltk
 import os.path
 from nltk.collocations import *
-from colorama import init, Fore, Back, Style
-init(autoreset=True)
 
 allwords = list()
 
@@ -31,15 +29,14 @@ def menu():
 				   5 : dumpSD,
 				   6 : getSensitive,
 		}
-		print (Fore.CYAN + 
-		   'What would you like to do?\n\
+		print "What would you like to do?\n\
 	 1) Check for adb & root\n\
 	 2) Pull SMS databases (default, WhatsApp, Facebook, GoSMS)\n\
 	 3) Extract words & Analyze data\n\
 	 4) Pull MMS & Images\n\
 	 5) Dump sdcard\n\
 	 6) Get sensitive data (accounts.db)\n\
-	 7) Exit\n\nChoice:'),
+	 7) Exit\n\nChoice:",
 		choice = raw_input()
 		if choice.isdigit() == True:
 			if choice=='7': break
@@ -48,29 +45,29 @@ def menu():
 		else:
 			continue
 def checkRoot():
-	print("[*] Trying 'adb root'...")
+	print "[*] Trying 'adb root'..."
 	proc = subprocess.Popen(['adb', 'root'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
 	if "already running as root" in proc:
-		print (Fore.RED + "[*] We're root!")
+		print "[*] We're root!"
 	else:
-		print (Fore.RED + "[*] Not root, try an exploit!")
+		print "[*] Not root, try an exploit!"
 def getAll():
-	print (Fore.RED + '[*] Pulling SMS database')
+	print "[*] Pulling SMS database"
 	subprocess.check_output(pullsms.split())
-	print (Fore.RED + '[*] Checking for Facebook messenger')
+	print "[*] Checking for Facebook messenger"
 	subprocess.check_output(pullfb.split())
-	print (Fore.RED + '[*] Checking for GoSMS')
+	print "[*] Checking for GoSMS"
 	subprocess.check_output(pullgosms.split())
-	print (Fore.RED + '[*] Checking for Whatsapp')
+	print "[*] Checking for Whatsapp"
 	subprocess.Popen(whatsapp_MSG.split()).communicate()[0]
 	subprocess.Popen(whatsapp_WA.split()).communicate()[0]
 
 def extractWords():
 	if os.path.exists('mmssms.db') == False:
-		print (Fore.RED + '\n[*] Use option 2 to dump the databases first!')
+		print "\n[*] Use option 2 to dump the databases first!"
 		return
 	else:
-		print (Fore.RED + '[*] Extracting words...')
+		print "[*] Extracting words..."
 		
 		conn = sqlite3.connect('mmssms.db')
 		c = conn.cursor()
@@ -117,10 +114,10 @@ def extractWords():
 	analyze()
 
 def getImages():
-	print (Fore.RED + '[*] Pulling images')
+	print "[*] Pulling images"
 	pullSMS = 'adb pull /sdcard/DCIM/Camera images'
 	s = subprocess.check_output(pullSMS.split())
-	print (Fore.RED + '[*] Saved to folder: images')
+	print "[*] Saved to folder: images"
 	#print s
 
 def analyze():
@@ -130,13 +127,13 @@ def analyze():
 	text = nltk.Text(tokens)
 	fd = nltk.FreqDist(text)
 	while True:
-		print (Fore.CYAN + '\
+		print "\
 		 1) Word search w/ context\n\
 		 2) Count occurrences of a word\n\
 		 3) Investigate numeric messages w/ context\n\
 		 4) Parse street addresses\n\
 		 5) List most frequent 20 words\n\
-		 6) Back to Main Menu\nChoice:'),
+		 6) Back to Main Menu\nChoice:",
 		choice = raw_input()
 		if choice=='1':
 			word_to_search = raw_input("\nEnter a word: ")
@@ -165,22 +162,22 @@ def analyze():
 			break
 
 def dumpSD():
-	print (Fore.RED + '[*] Dumping SD card...')
+	print "[*] Dumping SD card..."
 	subprocess.check_output(sdcard.split())
 def getSensitive():
-	print (Fore.RED + '[*] Pulling accounts.db...')
+	print "[*] Pulling accounts.db..."
 	subprocess.check_output(sensitive.split())
 	
 	connfb = sqlite3.connect('accounts.db')
 	c = connfb.cursor()
 	c.execute('SELECT name FROM accounts')
-	print (Fore.RED + '[*] Printing accounts...')
+	print "[*] Printing accounts..."
 	for record in c.fetchall():
 		print str(record[0])
 	c.execute('SELECT password FROM accounts')
-	print (Fore.RED + '[*] Printing password hashes')
+	print "[*] Printing password hashes"
 	for record in c.fetchall():
 		print str(record[0])
 
-print (Fore.CYAN + '\nWelcome!'),
+print "\nWelcome!",
 menu()
