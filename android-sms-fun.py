@@ -1,3 +1,9 @@
+#Author: github.com/secgit
+#Date: 12-18-2013
+#Purpose: 
+#  Dump common Android SMS databases and use the Python Natural
+#  Language Toolkit (NLTK) to discover interesting information.
+
 import subprocess
 import sqlite3
 import nltk
@@ -35,9 +41,12 @@ def menu():
 	 6) Get sensitive data (accounts.db)\n\
 	 7) Exit\n\nChoice:'),
 		choice = raw_input()
-		if choice=='7': break
+		if choice.isdigit() == True:
+			if choice=='7': break
+			else:
+				options[int(choice)]()
 		else:
-			options[int(choice)]()
+			continue
 def checkRoot():
 	print("[*] Trying 'adb root'...")
 	proc = subprocess.Popen(['adb', 'root'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
@@ -49,7 +58,7 @@ def getAll():
 	print (Fore.RED + '[*] Pulling SMS database')
 	subprocess.check_output(pullsms.split())
 	print (Fore.RED + '[*] Checking for Facebook messenger')
-	#subprocess.check_output(pullfb.split())
+	subprocess.check_output(pullfb.split())
 	print (Fore.RED + '[*] Checking for GoSMS')
 	subprocess.check_output(pullgosms.split())
 	print (Fore.RED + '[*] Checking for Whatsapp')
@@ -57,7 +66,10 @@ def getAll():
 	subprocess.Popen(whatsapp_WA.split()).communicate()[0]
 
 def extractWords():
-	if os.path.exists('mmssms.db') == True:
+	if os.path.exists('mmssms.db') == False:
+		print (Fore.RED + '\n[*] Use option 2 to dump the databases first!')
+		return
+	else:
 		print (Fore.RED + '[*] Extracting words...')
 		
 		conn = sqlite3.connect('mmssms.db')
@@ -66,7 +78,7 @@ def extractWords():
 		
 		f = open('words.txt','w')
 		for record in c.fetchall():
-			#print record
+			#print record[0]
 			line = record[0].encode('utf-8').strip()
 			words = line.split()
 			for eachword in words:
@@ -74,7 +86,7 @@ def extractWords():
 			f.write(record[0].encode('utf-8').strip())
 			f.write('\n')
 		f.close()
-		
+	if os.path.exists('threads_db2'):
 		conn = sqlite3.connect('threads_db2')
 		c = conn.cursor()
 		c.execute('SELECT text FROM messages')
@@ -88,12 +100,21 @@ def extractWords():
 			f.write(str(record[0]))
 			f.write('\n')
 		f.close()
+	if os.path.exists('gommssms.db'):
+		conn = sqlite3.connect('gommssms.db')
+		c = conn.cursor()
+		c.execute('SELECT c1index_text FROM words_content')
 		
-		#sort for analyzing
-		allwords.sort()
-		analyze()
-	else:
-		print (Fore.RED + '\n[*] Use option 2 to dump the databases first!')
+		f = open('words.txt','a')
+		for record in c.fetchall():
+			line = record[0].encode('utf-8').strip()
+			words = line.split()
+			for eachword in words:
+				allwords.append(eachword.lower())
+			f.write(record[0].encode('utf-8').strip())
+			f.write('\n')
+		f.close()
+	analyze()
 
 def getImages():
 	print (Fore.RED + '[*] Pulling images')
@@ -103,12 +124,11 @@ def getImages():
 	#print s
 
 def analyze():
+	allwords.sort()
 	raw = open("words.txt", "r").read()
-	#print raw
 	tokens = nltk.word_tokenize(raw)
 	text = nltk.Text(tokens)
 	fd = nltk.FreqDist(text)
-	#print text.concordance("love")
 	while True:
 		print (Fore.CYAN + '\
 		 1) Word search w/ context\n\
@@ -150,12 +170,15 @@ def dumpSD():
 def getSensitive():
 	print (Fore.RED + '[*] Pulling accounts.db...')
 	subprocess.check_output(sensitive.split())
+	
 	connfb = sqlite3.connect('accounts.db')
 	c = connfb.cursor()
 	c.execute('SELECT name FROM accounts')
+	print (Fore.RED + '[*] Printing accounts...')
 	for record in c.fetchall():
 		print str(record[0])
 	c.execute('SELECT password FROM accounts')
+	print (Fore.RED + '[*] Printing password hashes')
 	for record in c.fetchall():
 		print str(record[0])
 
